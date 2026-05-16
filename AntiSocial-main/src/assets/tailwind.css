@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-[#f5f5f4] text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100;
+  }
+}
+
+@layer components {
+  .buffer-card {
+    @apply rounded-xl border border-slate-200/90 bg-white shadow-card dark:border-slate-800 dark:bg-slate-900;
+  }
+
+  .buffer-nav-active {
+    @apply bg-buffer-50 font-semibold text-buffer-800 dark:bg-buffer-500/15 dark:text-buffer-300;
+  }
+
+  .buffer-nav-item {
+    @apply flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-slate-600 transition hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800;
+  }
+}
