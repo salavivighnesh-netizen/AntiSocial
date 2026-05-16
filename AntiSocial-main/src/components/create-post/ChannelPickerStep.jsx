@@ -1,8 +1,12 @@
 import { Check } from "lucide-react";
+import ChannelPreviewPanel from "./ChannelPreviewPanel";
 
 export default function ChannelPickerStep({
   connectedPlatformConfigs,
+  connectedByPlatform,
   selectedKeys,
+  previewChannelKey,
+  onPreviewChannelChange,
   onToggle,
   onSelectAll,
   onClearAll,
@@ -12,7 +16,7 @@ export default function ChannelPickerStep({
   const allSelected = connectedPlatformConfigs.length > 0 && selectedKeys.length === connectedPlatformConfigs.length;
 
   return (
-    <section className="mx-auto max-w-3xl space-y-6">
+    <section className={`mx-auto space-y-6 ${selectedKeys.length ? "max-w-6xl" : "max-w-3xl"}`}>
       <header>
         <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Create post</h2>
         <p className="mt-1 text-sm text-slate-500">
@@ -39,6 +43,8 @@ export default function ChannelPickerStep({
         </div>
       </header>
 
+      <motion className={`grid gap-5 ${selectedKeys.length ? "lg:grid-cols-[1fr_320px]" : ""}`}>
+        <motion>
       <div className="grid gap-3 sm:grid-cols-2">
         {connectedPlatformConfigs.map((platformConfig) => {
           const Icon = platformConfig.icon;
@@ -47,7 +53,10 @@ export default function ChannelPickerStep({
             <button
               key={platformConfig.key}
               type="button"
-              onClick={() => onToggle(platformConfig.key)}
+              onClick={() => {
+                onPreviewChannelChange?.(platformConfig.key);
+                onToggle(platformConfig.key);
+              }}
               className={`buffer-card flex items-center gap-4 p-4 text-left transition ring-2 ${
                 isSelected
                   ? "border-buffer-400 ring-buffer-200 dark:border-buffer-500/50 dark:ring-buffer-500/30"
