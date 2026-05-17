@@ -1,105 +1,93 @@
-import { useEffect, useMemo, useRef } from "react";
-import { ImagePlus, Send, Sparkles } from "lucide-react";
-import { SOCIAL_PLATFORM_CONFIGS } from "../../data/socialPlatforms";
+import { useRef } from "react";
+import { useObjectUrl } from "../../utils/useObjectUrl";
+import { ChevronDown, Hash, ImagePlus, Plus, Smile } from "lucide-react";
 
 export default function SharedPostComposer({
   caption,
   file,
   captionLimit,
-  selectedChannelKeys,
-  publishing,
   onCaptionChange,
   onFileChange,
-  onPostToAll,
 }) {
   const fileInputRef = useRef(null);
-  const previewUrl = useMemo(() => (file ? URL.createObjectURL(file) : null), [file]);
-
-  useEffect(() => {
-    return () => {
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
-    };
-  }, [previewUrl]);
-
-  const channelLabels = selectedChannelKeys
-    .map((key) => SOCIAL_PLATFORM_CONFIGS.find((c) => c.key === key)?.label || key)
-    .join(", ");
-
-  const canPost = Boolean(caption.trim() || file);
+  const previewUrl = useObjectUrl(file);
 
   return (
-    <article className="buffer-card overflow-hidden border-2 border-buffer-200 dark:border-buffer-500/30">
-      <div className="border-b border-buffer-100 bg-buffer-50/60 px-4 py-3 dark:border-buffer-500/20 dark:bg-buffer-500/5">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <Sparkles size={18} className="text-buffer-600 dark:text-buffer-400" />
-            <div>
-              <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Write once, post everywhere</h3>
-              <p className="text-xs text-slate-500">
-                {selectedChannelKeys.length} channel{selectedChannelKeys.length === 1 ? "" : "s"}: {channelLabels}
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            disabled={publishing || !canPost || !selectedChannelKeys.length}
-            onClick={onPostToAll}
-            className="inline-flex items-center gap-2 rounded-lg bg-buffer-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-buffer-700 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <Send size={16} />
-            {publishing ? "Posting…" : `Post to all (${selectedChannelKeys.length})`}
-          </button>
-        </div>
-      </div>
-
-      <div className="space-y-4 p-4">
+    <article className="bg-white dark:bg-slate-900">
+      <div className="p-4">
         <textarea
-          rows={4}
+          rows={8}
           maxLength={captionLimit}
           value={caption}
           onChange={(e) => onCaptionChange(e.target.value)}
-          placeholder="Write your post once — we'll adapt it for each channel"
-          className="w-full resize-none rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-buffer-500 focus:ring-2 focus:ring-buffer-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+          placeholder="Start writing or get inspired with Templates"
+          className="w-full resize-none border-0 bg-transparent px-0 py-0 text-sm text-slate-900 outline-none placeholder:text-slate-400 dark:text-white"
         />
-        <div className="flex items-center justify-between text-xs text-slate-500">
-          <span>Caption is trimmed per channel (e.g. 280 on X, 500 on Threads)</span>
-          <span>
+
+        <div className="mt-3 flex flex-wrap items-end gap-3">
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => fileInputRef.current?.click()}
+            onKeyDown={(e) => e.key === "Enter" && fileInputRef.current?.click()}
+            className="flex h-[88px] w-[88px] shrink-0 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-200 bg-slate-50/80 text-center transition hover:border-buffer-400 hover:bg-buffer-50/50 dark:border-slate-600 dark:bg-slate-950/50"
+          >
+            {previewUrl && file ? (
+              file.type?.startsWith("video/") ? (
+                <video src={previewUrl} className="h-full w-full rounded-md object-cover" muted />
+              ) : (
+                <img src={previewUrl} alt="" className="h-full w-full rounded-md object-cover" />
+              )
+            ) : (
+              <>
+                <ImagePlus size={22} className="text-slate-400" />
+                <p className="mt-1 px-1 text-[10px] leading-tight text-slate-500">Drag & drop or select a file</p>
+              </>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,video/*"
+              className="hidden"
+              onChange={(e) => onFileChange(e.target.files?.[0] ?? null)}
+            />
+          </div>
+
+          {file ? (
+            <button
+              type="button"
+              onClick={() => onFileChange(null)}
+              className="text-xs font-medium text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+            >
+              Remove media
+            </button>
+          ) : null}
+        </div>
+
+        <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-800">
+          <div className="flex items-center gap-1 text-slate-400">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="rounded-md p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800"
+              aria-label="Add media"
+            >
+              <Plus size={18} />
+            </button>
+            <button type="button" className="rounded-md p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="More options">
+              <ChevronDown size={18} />
+            </button>
+            <button type="button" className="rounded-md p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Add emoji">
+              <Smile size={18} />
+            </button>
+            <button type="button" className="rounded-md p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Hashtag">
+              <Hash size={18} />
+            </button>
+          </div>
+          <span className="text-xs text-slate-400">
             {caption.length} / {captionLimit}
           </span>
         </div>
-
-        <div
-          role="button"
-          tabIndex={0}
-          onClick={() => fileInputRef.current?.click()}
-          onKeyDown={(e) => e.key === "Enter" && fileInputRef.current?.click()}
-          className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-200 bg-slate-50/80 py-6 transition hover:border-buffer-400 dark:border-slate-700 dark:bg-slate-950/50"
-        >
-          {previewUrl && file ? (
-            file.type?.startsWith("video/") ? (
-              <video src={previewUrl} className="max-h-36 w-full rounded-md object-contain" controls muted />
-            ) : (
-              <img src={previewUrl} alt="" className="max-h-36 w-full rounded-md object-contain" />
-            )
-          ) : (
-            <>
-              <ImagePlus size={26} className="text-slate-400" />
-              <p className="mt-2 text-sm font-medium text-slate-600 dark:text-slate-300">Add photo or video (shared across channels)</p>
-            </>
-          )}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*,video/*"
-            className="hidden"
-            onChange={(e) => onFileChange(e.target.files?.[0] ?? null)}
-          />
-        </div>
-        {file ? (
-          <button type="button" onClick={() => onFileChange(null)} className="text-xs font-medium text-slate-500 hover:text-slate-700">
-            Remove media
-          </button>
-        ) : null}
       </div>
     </article>
   );

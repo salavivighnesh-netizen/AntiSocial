@@ -1,10 +1,10 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AlertCircle, Plus } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
-import SocialAccountCard from "../social/SocialAccountCard";
 import ConnectedChannelProfileCard from "../social/ConnectedChannelProfileCard";
 import DisconnectConfirmationDialog from "../social/DisconnectConfirmationDialog";
+import ConnectChannelModal from "./ConnectChannelModal";
 import { useSocialConnections } from "../../hooks/useSocialConnections";
 import { useApp } from "../../context/AppContext";
 import { SOCIAL_PLATFORM_CONFIGS } from "../../data/socialPlatforms";
@@ -12,6 +12,7 @@ import { SOCIAL_PLATFORM_CONFIGS } from "../../data/socialPlatforms";
 export default function ChannelsConnectionsPanel({ variant = "channels", showHeader = true }) {
   const navigate = useNavigate();
   const { setToast, refreshConnectedAccounts } = useApp();
+  const [connectModalOpen, setConnectModalOpen] = useState(false);
   const {
     accounts,
     accountsByPlatform,
@@ -24,11 +25,10 @@ export default function ChannelsConnectionsPanel({ variant = "channels", showHea
     setDisconnectDialog,
     oauthBanner,
     connectPlatform,
-    reconnectPlatform,
     disconnectPlatform,
   } = useSocialConnections({ setToast, refreshConnectedAccounts });
 
-  const openDetails = (platformKey) => navigate(`/connected-platforms/${platformKey}`);
+  const openDetails = (platformKey) => navigate(`/channels/${platformKey}`);
 
   const connectedForGrid = useMemo(
     () =>
@@ -42,10 +42,22 @@ export default function ChannelsConnectionsPanel({ variant = "channels", showHea
     [accounts]
   );
 
-  const platformsToConnect = useMemo(
-    () => availablePlatforms.filter((p) => !accountsByPlatform[p.key]?.isConnected),
-    [availablePlatforms, accountsByPlatform]
+  const connectedKeys = useMemo(
+    () => new Set(accounts.filter((a) => a.isConnected).map((a) => a.platform)),
+    [accounts]
   );
+
+  const modalPlatforms = useMemo(() => {
+    const keys = new Set([
+      ...availablePlatforms.map((p) => p.key),
+      ...temporarilyDisabledPlatforms.map((p) => p.key),
+    ]);
+    return SOCIAL_PLATFORM_CONFIGS.filter((p) => keys.has(p.key));
+  }, [availablePlatforms, temporarilyDisabledPlatforms]);
+
+  const handleConnectFromModal = async (platformKey) => {
+    await connectPlatform(platformKey);
+  };
 
   return (
     <section className="space-y-6">
@@ -53,13 +65,13 @@ export default function ChannelsConnectionsPanel({ variant = "channels", showHea
         <header className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">
-              {variant === "settings" ? "Channels & connections" : "Channels"}
+              {variant === "settings" ? "Channels & connections" : "Connect channels"}
             </h1>
             <p className="mt-1 max-w-2xl text-sm text-slate-500 dark:text-slate-400">
               Connect social profiles and manage publishing access. Each channel syncs posts, analytics, and scheduling.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="rounded-full bg-buffer-50 px-3 py-1 text-xs font-semibold text-buffer-700 dark:bg-buffer-500/15 dark:text-buffer-300">
               {summary.totalConnected} connected
             </span>
@@ -68,6 +80,14 @@ export default function ChannelsConnectionsPanel({ variant = "channels", showHea
                 {summary.reconnectRequired} need reconnect
               </span>
             ) : null}
+            <button
+              type="button"
+              onClick={() => setConnectModalOpen(true)}
+              className="inline-flex items-center gap-2 rounded-lg bg-buffer-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-buffer-700"
+            >
+              <Plus size={16} />
+              Connect a channel
+            </button>
           </div>
         </header>
       ) : null}
@@ -101,8 +121,20 @@ export default function ChannelsConnectionsPanel({ variant = "channels", showHea
 
       {!loadingAccounts && connectedForGrid.length > 0 ? (
         <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-card dark:border-slate-800 dark:bg-slate-900">
-          <h2 className="mb-1 text-sm font-semibold text-slate-900 dark:text-white">Your connected channels</h2>
-          <p className="mb-4 text-xs text-slate-500">Profile view — click to manage</p>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold text-slate-900 dark:text-white">Your channels</h2>
+              <p className="mt-0.5 text-xs text-slate-500">Click a channel to manage posting and settings</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setConnectModalOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
+            >
+              <Plus size={14} />
+              Add channel
+            </button>
+          </div>
           <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
             {connectedForGrid.map(({ account, platformConfig }) => (
               <ConnectedChannelProfileCard
@@ -117,73 +149,21 @@ export default function ChannelsConnectionsPanel({ variant = "channels", showHea
         </article>
       ) : null}
 
-      {platformsToConnect.length > 0 ? (
-        <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-card dark:border-slate-800 dark:bg-slate-900">
-          <div className="mb-4 flex items-center justify-between gap-2">
-            <div>
-              <h2 className="text-sm font-semibold text-slate-900 dark:text-white">Available channels</h2>
-              <p className="mt-0.5 text-xs text-slate-500">OAuth and bot-based connections supported per platform.</p>
-            </div>
-            <Plus size={18} className="text-buffer-600" />
-          </div>
-          {loadingAccounts ? (
-            <div className="grid gap-4 lg:grid-cols-2">
-              {Array.from({ length: 4 }).map((_, idx) => (
-                <div key={idx} className="h-44 animate-pulse rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-800/50" />
-              ))}
-            </div>
-          ) : (
-            <div className="grid gap-4 lg:grid-cols-2">
-              {platformsToConnect.map((platform) => (
-                <SocialAccountCard
-                  key={platform.key}
-                  variant="buffer"
-                  platformConfig={platform}
-                  account={accountsByPlatform[platform.key] || { platform: platform.key, isConnected: false }}
-                  isProcessing={processingPlatform === platform.key}
-                  onConnect={() => connectPlatform(platform.key)}
-                  onReconnect={() => reconnectPlatform(platform.key)}
-                  onDisconnect={() => setDisconnectDialog({ open: true, platform: platform.key })}
-                  onOpenDetails={() => openDetails(platform.key)}
-                />
-              ))}
-            </div>
-          )}
-        </article>
-      ) : null}
-
-      {temporarilyDisabledPlatforms.length > 0 ? (
-        <article className="rounded-xl border border-dashed border-slate-300 bg-slate-50/80 p-5 dark:border-slate-700 dark:bg-slate-900/50">
-          <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">Temporarily unavailable</h2>
-          <p className="mb-4 mt-1 text-xs text-slate-500">New connections are paused for these platforms.</p>
-          <div className="grid gap-4 lg:grid-cols-2">
-            {temporarilyDisabledPlatforms.map((platform) => (
-              <SocialAccountCard
-                key={platform.key}
-                variant="buffer"
-                platformConfig={platform}
-                account={accountsByPlatform[platform.key] || { platform: platform.key, isConnected: false }}
-                isProcessing={processingPlatform === platform.key}
-                connectTemporarilyDisabled
-                onConnect={() => connectPlatform(platform.key)}
-                onReconnect={() => reconnectPlatform(platform.key)}
-                onDisconnect={() => setDisconnectDialog({ open: true, platform: platform.key })}
-                onOpenDetails={() => openDetails(platform.key)}
-              />
-            ))}
-          </div>
-        </article>
-      ) : null}
-
-      {!loadingAccounts && !accounts.some((item) => item.isConnected) ? (
-        <div className="flex items-start gap-3 rounded-xl border border-buffer-200 bg-buffer-50/50 p-4 dark:border-buffer-500/20 dark:bg-buffer-500/5">
-          <AlertCircle className="mt-0.5 shrink-0 text-buffer-600" size={18} />
-          <div>
-            <p className="text-sm font-medium text-slate-900 dark:text-white">No channels connected yet</p>
-            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-              Connect at least one channel to publish, schedule, and view analytics.
-            </p>
-          </div>
+      {!loadingAccounts && connectedForGrid.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 px-6 py-14 text-center dark:border-slate-600 dark:bg-slate-900/40">
+          <AlertCircle className="mb-3 text-buffer-600" size={28} />
+          <p className="text-base font-semibold text-slate-900 dark:text-white">No channels connected yet</p>
+          <p className="mt-2 max-w-sm text-sm text-slate-600 dark:text-slate-400">
+            Connect Instagram, Facebook, LinkedIn, and more to publish and schedule from one place.
+          </p>
+          <button
+            type="button"
+            onClick={() => setConnectModalOpen(true)}
+            className="mt-6 inline-flex items-center gap-2 rounded-lg bg-buffer-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-buffer-700"
+          >
+            <Plus size={16} />
+            Connect a New Channel
+          </button>
         </div>
       ) : null}
 
@@ -196,6 +176,15 @@ export default function ChannelsConnectionsPanel({ variant = "channels", showHea
           onConfirm={disconnectPlatform}
         />
       </AnimatePresence>
+
+      <ConnectChannelModal
+        open={connectModalOpen}
+        onClose={() => setConnectModalOpen(false)}
+        platforms={modalPlatforms}
+        connectedKeys={connectedKeys}
+        processingPlatform={processingPlatform}
+        onSelectPlatform={handleConnectFromModal}
+      />
     </section>
   );
 }

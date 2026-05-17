@@ -4,9 +4,9 @@ import { getSocialAccounts } from "../services/socialApi";
 import { SOCIAL_PLATFORM_CONFIGS } from "../data/socialPlatforms";
 import { createEmptyChannelDraft } from "../data/platformComposerConfig";
 import ChannelPickerStep from "../components/create-post/ChannelPickerStep";
-import CreatePostWorkspace from "../components/create-post/CreatePostWorkspace";
+import SchedulePostWorkspace from "../components/create-post/SchedulePostWorkspace";
 
-export default function CreatePostPage() {
+export default function SchedulePostPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [connectedAccounts, setConnectedAccounts] = useState([]);
@@ -72,12 +72,12 @@ export default function CreatePostPage() {
   }, []);
 
   const handleBack = useCallback(() => {
-    if (scopedPlatformKey) {
-      navigate(`/channels/${scopedPlatformKey}`);
+    if (step === "compose" && !scopedPlatformKey) {
+      setStep("pick");
       return;
     }
-    setStep("pick");
-  }, [scopedPlatformKey, navigate]);
+    navigate("/schedule");
+  }, [step, scopedPlatformKey, navigate]);
 
   useEffect(() => {
     if (step === "compose" && selectedChannelKeys.length === 0) {
@@ -89,7 +89,7 @@ export default function CreatePostPage() {
     return (
       <section className="buffer-card mx-auto max-w-lg p-6">
         <p className="font-semibold text-slate-900 dark:text-white">No connected platforms</p>
-        <p className="mt-1 text-sm text-slate-500">Connect at least one channel to create posts.</p>
+        <p className="mt-1 text-sm text-slate-500">Connect at least one channel to schedule posts.</p>
         <button
           type="button"
           onClick={() => navigate("/channels")}
@@ -103,7 +103,7 @@ export default function CreatePostPage() {
 
   if (step === "compose" && selectedChannelKeys.length > 0) {
     return (
-      <CreatePostWorkspace
+      <SchedulePostWorkspace
         selectedChannelKeys={selectedChannelKeys}
         connectedByPlatform={connectedByPlatform}
         drafts={drafts}
@@ -115,8 +115,9 @@ export default function CreatePostPage() {
 
   return (
     <ChannelPickerStep
-      title="Create post"
-      subtitle="Select channels, write your post, and publish to all at once."
+      title="Schedule post"
+      subtitle="Select channels, add your content, and choose when it goes live."
+      maxWidthClass={selectedChannelKeys.length ? "max-w-[88rem]" : "max-w-4xl"}
       connectedPlatformConfigs={connectedPlatformConfigs}
       connectedByPlatform={connectedByPlatform}
       selectedKeys={selectedChannelKeys}
@@ -124,6 +125,7 @@ export default function CreatePostPage() {
       onSelectAll={selectAllChannels}
       onClearAll={clearAllChannels}
       onContinue={startCompose}
+      continueLabel="Continue to schedule"
     />
   );
 }

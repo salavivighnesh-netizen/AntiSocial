@@ -8,8 +8,17 @@ import {
 import { applyTemplate, getTemplatesForPlatform, improveCaption } from "../../utils/aiPostGenerator";
 import { generateAiCaptions } from "../../services/aiApi";
 
-export default function PostIdeasPanel({ caption, onApplyCaption, selectedPlatform, topic: topicProp, onTopicChange }) {
-  const [tab, setTab] = useState("templates");
+export default function PostIdeasPanel({
+  caption,
+  onApplyCaption,
+  selectedPlatform,
+  topic: topicProp,
+  onTopicChange,
+  section = "both",
+  embedded = false,
+}) {
+  const showTemplates = section === "both" || section === "templates";
+  const showAi = section === "both" || section === "ai";
   const [category, setCategory] = useState("all");
   const [topic, setTopic] = useState(topicProp || "");
   const [tone, setTone] = useState("casual");
@@ -45,43 +54,40 @@ export default function PostIdeasPanel({ caption, onApplyCaption, selectedPlatfo
   };
 
   return (
-    <article className="buffer-card flex h-full flex-col overflow-hidden">
-      <div className="border-b border-slate-200 px-4 py-3 dark:border-slate-800">
-        <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white">
-          <Sparkles size={16} className="text-buffer-600" />
-          Ideas & AI
-        </h2>
-        <p className="mt-0.5 text-xs text-slate-500">Templates and AI-assisted captions</p>
-        <div className="mt-3 flex gap-1 rounded-lg bg-slate-100 p-1 dark:bg-slate-800">
-          <button
-            type="button"
-            onClick={() => setTab("templates")}
-            className={`flex flex-1 items-center justify-center gap-1.5 rounded-md py-1.5 text-xs font-semibold transition ${
-              tab === "templates"
-                ? "bg-white text-slate-900 shadow-sm dark:bg-slate-900 dark:text-white"
-                : "text-slate-500"
-            }`}
-          >
-            <LayoutTemplate size={14} />
-            Templates
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab("ai")}
-            className={`flex flex-1 items-center justify-center gap-1.5 rounded-md py-1.5 text-xs font-semibold transition ${
-              tab === "ai" ? "bg-white text-slate-900 shadow-sm dark:bg-slate-900 dark:text-white" : "text-slate-500"
-            }`}
-          >
-            <Wand2 size={14} />
-            AI
-          </button>
+    <article
+      className={`overflow-hidden bg-white dark:bg-slate-900 ${
+        embedded
+          ? "rounded-xl border border-slate-200 shadow-sm dark:border-slate-700"
+          : "rounded-2xl border-2 border-slate-200 shadow-sm dark:border-slate-700"
+      }`}
+    >
+      {!embedded ? (
+        <div className="border-b border-slate-200 bg-slate-50/80 px-5 py-3.5 dark:border-slate-800 dark:bg-slate-950/40">
+          <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white">
+            <Sparkles size={16} className="text-buffer-600 dark:text-buffer-400" />
+            Ideas & AI
+          </h2>
+          <p className="mt-0.5 text-xs text-slate-500">Templates and AI assistant — pick either side to fill your post</p>
         </div>
-      </div>
+      ) : null}
 
-      <div className="flex-1 overflow-y-auto p-4">
-        {tab === "templates" ? (
-          <div className="space-y-4">
-            <div className="flex flex-wrap gap-1.5">
+      <div
+        className={`grid min-h-[320px] ${
+          showTemplates && showAi
+            ? "lg:grid-cols-2 lg:divide-x lg:divide-slate-200 dark:lg:divide-slate-700"
+            : "grid-cols-1"
+        }`}
+      >
+        {showTemplates ? (
+        <section className="flex min-h-[280px] flex-col">
+          <div className="flex shrink-0 items-center gap-2 border-b border-slate-100 bg-slate-50/60 px-4 py-2.5 dark:border-slate-800 dark:bg-slate-950/30">
+            <LayoutTemplate size={15} className="text-buffer-600 dark:text-buffer-400" />
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
+              Templates
+            </span>
+          </div>
+          <div className="flex flex-1 flex-col overflow-hidden p-4">
+            <div className="mb-3 flex flex-wrap gap-1.5">
               {POST_TEMPLATE_CATEGORIES.map((cat) => (
                 <button
                   key={cat.id}
@@ -97,9 +103,9 @@ export default function PostIdeasPanel({ caption, onApplyCaption, selectedPlatfo
                 </button>
               ))}
             </div>
-            <div className="space-y-2">
+            <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
               {templates.length === 0 ? (
-                <p className="text-xs text-slate-500">No templates for this filter. Try &quot;All&quot; or another platform.</p>
+                <p className="text-xs text-slate-500">No templates for this filter. Try &quot;All&quot;.</p>
               ) : (
                 templates.map((tpl) => (
                   <button
@@ -115,18 +121,28 @@ export default function PostIdeasPanel({ caption, onApplyCaption, selectedPlatfo
               )}
             </div>
           </div>
-        ) : (
-          <div className="space-y-4">
+        </section>
+        ) : null}
+
+        {showAi ? (
+        <section className="flex min-h-[280px] flex-col">
+          <div className="flex shrink-0 items-center gap-2 border-b border-slate-100 bg-slate-50/60 px-4 py-2.5 dark:border-slate-800 dark:bg-slate-950/30">
+            <Wand2 size={15} className="text-buffer-600 dark:text-buffer-400" />
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
+              AI assistant
+            </span>
+          </div>
+          <div className="flex flex-1 flex-col overflow-y-auto p-4">
             <label className="block">
               <span className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Topic / product</span>
               <input
                 value={topic}
                 onChange={(e) => handleTopicChange(e.target.value)}
-                placeholder="e.g. spring sale, new feature, hiring"
+                placeholder="e.g. spring sale, new feature"
                 className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-buffer-500 focus:ring-2 focus:ring-buffer-500/20 dark:border-slate-700 dark:bg-slate-950"
               />
             </label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="mt-3 grid grid-cols-2 gap-2">
               <label className="block">
                 <span className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Tone</span>
                 <select
@@ -160,18 +176,18 @@ export default function PostIdeasPanel({ caption, onApplyCaption, selectedPlatfo
               type="button"
               disabled={generating}
               onClick={runGenerate}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-buffer-600 py-2.5 text-sm font-semibold text-white hover:bg-buffer-700 disabled:opacity-60"
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-buffer-600 py-2.5 text-sm font-semibold text-white hover:bg-buffer-700 disabled:opacity-60"
             >
               {generating ? <Loader2 size={16} className="animate-spin" /> : <Wand2 size={16} />}
               {generating ? "Generating…" : "Generate captions"}
             </button>
             {lastSource ? (
-              <p className="text-center text-[10px] text-slate-400">
+              <p className="mt-2 text-center text-[10px] text-slate-400">
                 {lastSource === "openai" ? "Powered by OpenAI" : "Smart suggestions (add OPENAI_API_KEY for GPT)"}
               </p>
             ) : null}
             {aiResults.length > 0 ? (
-              <div className="space-y-2">
+              <div className="mt-3 space-y-2">
                 <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">Pick a variant</p>
                 {aiResults.map((item) => (
                   <button
@@ -186,7 +202,7 @@ export default function PostIdeasPanel({ caption, onApplyCaption, selectedPlatfo
               </div>
             ) : null}
             {caption.trim() ? (
-              <div className="border-t border-slate-200 pt-4 dark:border-slate-800">
+              <div className="mt-4 border-t border-slate-200 pt-3 dark:border-slate-800">
                 <p className="mb-2 text-xs font-semibold text-slate-600 dark:text-slate-300">Improve current caption</p>
                 <div className="flex flex-wrap gap-1.5">
                   {[
@@ -208,7 +224,8 @@ export default function PostIdeasPanel({ caption, onApplyCaption, selectedPlatfo
               </div>
             ) : null}
           </div>
-        )}
+        </section>
+        ) : null}
       </div>
     </article>
   );

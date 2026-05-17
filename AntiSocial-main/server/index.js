@@ -8,6 +8,8 @@ import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
 import { createSocialRoutes } from "./routes/social.routes.js";
 import { createAiRoutes } from "./routes/ai.routes.js";
+import { createScheduleRoutes } from "./routes/schedule.routes.js";
+import { startScheduledPostWorker } from "./jobs/scheduledPostWorker.js";
 import { getProviderEnvStatus, getRequiredEnvStatus } from "./config/social.config.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -288,6 +290,23 @@ app.post("/api/webhooks/instagram", receiveInstagramWebhook);
 
 app.use("/api/social", createSocialRoutes(requireAuth));
 app.use("/api/ai", createAiRoutes(requireAuth));
+app.use("/api/schedule", createScheduleRoutes(requireAuth));
+
+app.get("/api/health", (_req, res) => {
+  res.json({
+    ok: true,
+    features: { auth: true, social: true, schedule: true, upload: true },
+  });
+});
+
+app.use("/api", (req, res) => {
+  res.status(404).json({
+    success: false,
+    error: `API route not found: ${req.method} ${req.originalUrl}`,
+  });
+});
+
+startScheduledPostWorker();
 
 app.listen(port, () => {
   console.log(`API server running on http://localhost:${port}`);

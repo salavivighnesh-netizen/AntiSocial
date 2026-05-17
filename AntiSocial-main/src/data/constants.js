@@ -22,9 +22,9 @@ export const STORAGE_KEYS = {
 /** Buffer-style primary navigation */
 export const MAIN_NAV = [
   { key: "dashboard", label: "Home", path: "/dashboard", icon: Home },
-  { key: "create-post", label: "Publish", path: "/create-post", icon: PenSquare },
-  { key: "schedule", label: "Queue", path: "/schedule", icon: CalendarDays },
-  { key: "connected-platforms", label: "Connected Platforms", path: "/connected-platforms", icon: Radio },
+  { key: "create-post", label: "Create", path: "/create-post", icon: PenSquare },
+  { key: "schedule", label: "Schedule", path: "/schedule", icon: CalendarDays },
+  { key: "channels", label: "Connect channels", path: "/channels", icon: Radio },
 ];
 
 export const SETTINGS_NAV = [
@@ -43,10 +43,11 @@ export function getPageTitle(pathname) {
   const all = [...MAIN_NAV, ...SETTINGS_NAV, { label: "Settings", path: "/settings" }];
   const exact = all.find((r) => r.path === pathname);
   if (exact) return exact.label;
-  if (pathname.startsWith("/connected-platforms/")) return "Connected Platform";
   if (pathname.startsWith("/channels/")) return "Channel";
   if (pathname.startsWith("/settings")) return "Settings";
-  if (pathname.startsWith("/connected-platforms")) return "Connected Platforms";
-  if (pathname.startsWith("/channels")) return "Connected Platforms";
+  if (pathname.startsWith("/channels")) return "Connect channels";
+  if (pathname.startsWith("/schedule/new")) return "Schedule post";
+  if (pathname.startsWith("/schedule")) return "Schedule";
+  if (pathname.startsWith("/create-post")) return "Create";
   return "Home";
 }

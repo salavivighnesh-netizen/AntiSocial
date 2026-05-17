@@ -74,7 +74,7 @@ export function buildPostingTargetsConfig(platformKey, account) {
         title: row.accountName || row.username || "Your Facebook profile",
         sublabel: pid ? `Facebook profile · ID ${pid}` : "Facebook profile",
         imageUrl: row.profileImage || placeholderImage("facebook"),
-        path: `/connected-platforms/facebook`,
+        path: `/channels/facebook`,
       },
     ];
 
@@ -82,7 +82,7 @@ export function buildPostingTargetsConfig(platformKey, account) {
       title: "Facebook profile",
       description: "Publish to your personal Facebook timeline using your Meta login token. Page publishing is not used here.",
       primaryCtaLabel: "Create post",
-      primaryCtaPath: "/connected-platforms/facebook",
+      primaryCtaPath: "/channels/facebook",
       cards,
       emptyBanner: null,
     };
@@ -244,7 +244,7 @@ export function buildPostingTargetsConfig(platformKey, account) {
         title: t.chatTitle || String(t.chatId),
         sublabel: `${t.chatType === "supergroup" ? "Supergroup" : t.chatType === "group" ? "Group" : "Channel"} · ${t.chatId}`,
         imageUrl: placeholderImage("telegram"),
-        path: `/connected-platforms/telegram`,
+        path: `/channels/telegram`,
         telegramChatId: String(t.chatId),
       }));
 
@@ -277,7 +277,7 @@ export function buildPostingTargetsConfig(platformKey, account) {
         title: `${t.guildName || "Server"} → ${t.channelName ? `#${t.channelName}` : String(t.channelId)}`,
         sublabel: `${String(t.connectionType).toLowerCase() === "webhook" ? "Webhook" : "Bot"} · channel ${t.channelId}`,
         imageUrl: placeholderImage("discord"),
-        path: `/connected-platforms/discord`,
+        path: `/channels/discord`,
         discordPreset: { guildId: String(t.guildId || "").trim(), channelId: String(t.channelId) },
       }));
 
@@ -317,7 +317,7 @@ export function buildPostingTargetsConfig(platformKey, account) {
         title: entityDisplayName(loc),
         sublabel: `Google Business · Account ${accountId} · Location ${locationId}`,
         imageUrl: loc.profileImage || placeholderImage("googleBusiness"),
-        path: `/connected-platforms/googleBusiness`,
+        path: `/channels/googleBusiness`,
         googleBusinessPreset: { accountId, locationId },
       });
     }
@@ -335,7 +335,7 @@ export function buildPostingTargetsConfig(platformKey, account) {
       description:
         "Publish local posts to a verified Business Profile location you manage. Pick a location below or choose it in the composer.",
       primaryCtaLabel: "Create post",
-      primaryCtaPath: `/connected-platforms/googleBusiness`,
+      primaryCtaPath: `/channels/googleBusiness`,
       cards,
       emptyBanner,
     };

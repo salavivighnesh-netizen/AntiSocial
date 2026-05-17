@@ -1,6 +1,5 @@
-import { Navigate } from "react-router-dom";
+import ChannelsConnectionsPanel from "../components/channels/ChannelsConnectionsPanel";
 
-/** Alias route — same as Connected Platforms */
 export default function ChannelsPage() {
-  return <Navigate to="/connected-platforms" replace />;
+  return <ChannelsConnectionsPanel variant="channels" showHeader />;
 }

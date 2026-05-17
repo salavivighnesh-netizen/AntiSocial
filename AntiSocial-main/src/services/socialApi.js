@@ -1,6 +1,7 @@
 import axios from "axios";
 import { STORAGE_KEYS } from "../data/constants";
 import { apiUnreachableMessage, getClientApiBaseUrl } from "../utils/apiBaseUrl";
+import { formatHttpApiError } from "../utils/httpApiError";
 import { isNgrokHttpUrl, ngrokSkipBrowserWarningHeader } from "../utils/tunnelApiHeaders";
 
 const API_BASE_URL = getClientApiBaseUrl();
@@ -35,7 +36,7 @@ socialClient.interceptors.response.use(
 );
 
 function parseApiError(error, fallbackMessage) {
-  return new Error(error?.response?.data?.message || error?.response?.data?.error || fallbackMessage);
+  return formatHttpApiError(error, fallbackMessage);
 }
 
 export function getSocialOAuthErrorMessage(reason, platform) {

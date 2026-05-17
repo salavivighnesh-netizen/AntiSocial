@@ -1,18 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
-import { Send } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { CalendarClock, CalendarDays } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { SOCIAL_PLATFORM_CONFIGS } from "../../data/socialPlatforms";
-import { createEmptyChannelDraft } from "../../data/platformComposerConfig";
 import {
   getSharedCaptionLimit,
   getSharedFromDrafts,
   syncSharedToAllDrafts,
 } from "../../utils/sharedPostSync";
-import { publishToAllChannelsWithProgress, CHANNEL_PUBLISH_STATUS } from "../../utils/multiChannelPublish";
+import { uploadSocialPublicMediaFile } from "../../services/socialApi";
+import { createScheduledPost } from "../../services/scheduleApi";
 import CreatePostWorkspaceHeader from "./CreatePostWorkspaceHeader";
-import ChannelPreviewPanel from "./ChannelPreviewPanel";
-import ChannelPublishProgress from "./ChannelPublishProgress";
 import PreviewIdeasBoard from "./PreviewIdeasBoard";
+import ChannelPreviewPanel from "./ChannelPreviewPanel";
+import SchedulePostOptions from "./SchedulePostOptions";
 import SharedPostComposer from "./SharedPostComposer";
 import {
   WORKSPACE_CARD,
@@ -24,26 +24,37 @@ import {
   WORKSPACE_SHELL,
 } from "./workspaceLayout";
 
-export default function CreatePostWorkspace({
+const defaultTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+
+function defaultScheduleDateTime() {
+  const next = new Date();
+  next.setDate(next.getDate() + 1);
+  next.setHours(9, 0, 0, 0);
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${next.getFullYear()}-${pad(next.getMonth() + 1)}-${pad(next.getDate())}T09:00`;
+}
+
+export default function SchedulePostWorkspace({
   selectedChannelKeys,
   connectedByPlatform,
   drafts,
   onSetDrafts,
   onBack,
 }) {
-  const { setToast, refreshConnectedAccounts } = useApp();
+  const navigate = useNavigate();
+  const { setToast } = useApp();
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [publishing, setPublishing] = useState(false);
+  const [scheduling, setScheduling] = useState(false);
+  const [scheduledAt, setScheduledAt] = useState(defaultScheduleDateTime);
+  const [scheduleTitle, setScheduleTitle] = useState("");
+  const [timezone, setTimezone] = useState(defaultTimezone);
   const [sharedCaption, setSharedCaption] = useState("");
   const [sharedFile, setSharedFile] = useState(null);
-  const [ideaTopic, setIdeaTopic] = useState("");
-  const [channelStatuses, setChannelStatuses] = useState({});
-  const [channelErrors, setChannelErrors] = useState({});
   const [previewPanelMode, setPreviewPanelMode] = useState("previews");
+  const [ideaTopic, setIdeaTopic] = useState("");
 
   const captionLimit = getSharedCaptionLimit(selectedChannelKeys);
   const channelKeysKey = selectedChannelKeys.join(",");
-  const isPublishingOrDone = publishing || Object.keys(channelStatuses).length > 0;
 
   useEffect(() => {
     if (!selectedChannelKeys.length) return;
@@ -73,10 +84,6 @@ export default function CreatePostWorkspace({
     pushSharedToDrafts({ file });
   };
 
-  const applyCaption = (text) => {
-    handleCaptionChange(text || "");
-  };
-
   const hasContent = useMemo(
     () =>
       Boolean(
@@ -89,79 +96,63 @@ export default function CreatePostWorkspace({
 
   const submitLabel = useMemo(() => {
     const n = selectedChannelKeys.length;
-    return `Post to ${n} channel${n === 1 ? "" : "s"}`;
+    return `Schedule for ${n} channel${n === 1 ? "" : "s"}`;
   }, [selectedChannelKeys.length]);
 
   const handleSubmit = async () => {
     if (!hasContent) {
-      setToast({ message: "Add a caption or media before posting.", error: true });
+      setToast({ message: "Add a caption or media before scheduling.", error: true });
+      return;
+    }
+    if (!scheduledAt) {
+      setToast({ message: "Choose a date and time to schedule.", error: true });
+      return;
+    }
+    const scheduledDate = new Date(scheduledAt);
+    if (Number.isNaN(scheduledDate.getTime()) || scheduledDate.getTime() <= Date.now()) {
+      setToast({ message: "Pick a date and time in the future.", error: true });
       return;
     }
 
     const shared = getSharedFromDrafts(selectedChannelKeys, drafts);
     const caption = sharedCaption.trim() || shared.caption.trim();
     const file = sharedFile || shared.file;
-    const payload = { caption, file, mediaUrl: shared.mediaUrl || "" };
-    const synced = syncSharedToAllDrafts(selectedChannelKeys, payload);
+    const synced = syncSharedToAllDrafts(selectedChannelKeys, { caption, file, mediaUrl: shared.mediaUrl });
     onSetDrafts(synced);
 
-    setPublishing(true);
-    setChannelErrors({});
-    setChannelStatuses(
-      Object.fromEntries(selectedChannelKeys.map((k) => [k, CHANNEL_PUBLISH_STATUS.pending]))
-    );
-
+    setScheduling(true);
     try {
-      const { ok, failed, statuses } = await publishToAllChannelsWithProgress(
-        selectedChannelKeys,
-        payload,
-        {
-          connectedByPlatform,
-          onStatusChange: (next, detail) => {
-            setChannelStatuses({ ...next });
-            if (detail?.error && detail.platformKey) {
-              setChannelErrors((prev) => ({ ...prev, [detail.platformKey]: detail.error }));
-            }
-          },
-        }
-      );
-
-      setChannelStatuses(statuses);
-
-      if (ok.length) {
-        setSharedCaption("");
-        setSharedFile(null);
-        const labels = ok
-          .map(({ platformKey }) => SOCIAL_PLATFORM_CONFIGS.find((c) => c.key === platformKey)?.label || platformKey)
-          .join(", ");
-        setToast({
-          message:
-            ok.length === selectedChannelKeys.length
-              ? `Posted to all ${ok.length} channel(s): ${labels}.`
-              : `Posted to ${ok.length} channel(s): ${labels}.`,
-        });
-        try {
-          await refreshConnectedAccounts();
-        } catch {
-          /* non-fatal */
-        }
-        const cleared = {};
-        selectedChannelKeys.forEach((key) => {
-          cleared[key] = createEmptyChannelDraft(key);
-        });
-        onSetDrafts(cleared);
+      let mediaUrl = shared.mediaUrl || "";
+      if (file) {
+        mediaUrl = await uploadSocialPublicMediaFile(file);
+        if (!mediaUrl) throw new Error("Media upload failed.");
       }
 
-      if (failed.length && !ok.length) {
-        setToast({ message: "Could not post to any channel. See progress below.", error: true });
-      } else if (failed.length) {
-        setToast({ message: `${failed.length} channel(s) failed. See progress below.`, error: true });
-      }
+      await createScheduledPost({
+        title: scheduleTitle.trim() || caption.slice(0, 80) || "Scheduled post",
+        caption,
+        mediaUrl,
+        channelKeys: selectedChannelKeys,
+        drafts: synced,
+        scheduledAt: scheduledDate.toISOString(),
+        timezone,
+      });
+
+      setToast({
+        message: `Scheduled for ${selectedChannelKeys.length} channel(s).`,
+      });
+      setSharedCaption("");
+      setSharedFile(null);
+      navigate("/schedule");
     } catch (err) {
-      setToast({ message: err?.message || "Publish failed.", error: true });
+      setToast({ message: err?.message || "Scheduling failed.", error: true });
     } finally {
-      setPublishing(false);
+      setScheduling(false);
     }
+  };
+
+  const applyCaption = (text) => {
+    handleCaptionChange(text || "");
   };
 
   const cardShell = isFullscreen
@@ -176,7 +167,7 @@ export default function CreatePostWorkspace({
     <section className={cardShell}>
       <article className={workspaceCardClass}>
         <CreatePostWorkspaceHeader
-          title="Create post"
+          title="Schedule post"
           selectedChannelKeys={selectedChannelKeys}
           connectedByPlatform={connectedByPlatform}
           onBack={onBack}
@@ -199,15 +190,19 @@ export default function CreatePostWorkspace({
               onFileChange={handleFileChange}
             />
 
-            {isPublishingOrDone ? (
-              <div className="border-t border-slate-100 bg-slate-50/50 p-5 dark:border-slate-800 dark:bg-slate-950/30">
-                <ChannelPublishProgress
-                  selectedChannelKeys={selectedChannelKeys}
-                  channelStatuses={channelStatuses}
-                  errors={channelErrors}
-                />
-              </div>
-            ) : null}
+            <div id="workspace-schedule-options" className="border-t border-slate-100 p-5 dark:border-slate-800">
+              <SchedulePostOptions
+                scheduledAt={scheduledAt}
+                onScheduledAtChange={setScheduledAt}
+                timezone={timezone}
+                onTimezoneChange={setTimezone}
+                scheduleTitle={scheduleTitle}
+                onScheduleTitleChange={setScheduleTitle}
+                selectedChannelKeys={selectedChannelKeys}
+                caption={sharedCaption}
+                disabled={scheduling}
+              />
+            </div>
             </div>
           </div>
 
@@ -219,7 +214,6 @@ export default function CreatePostWorkspace({
                 sharedCaption={sharedCaption}
                 sharedFile={sharedFile}
                 drafts={drafts}
-                channelStatuses={channelStatuses}
                 className="h-full min-h-0"
               />
             ) : (
@@ -237,18 +231,23 @@ export default function CreatePostWorkspace({
           </aside>
         </div>
 
-        <footer className={WORKSPACE_FOOTER}>
-          <p className="text-sm text-slate-500">
-            Post goes live immediately on all selected channels.
-          </p>
+        <footer className={`${WORKSPACE_FOOTER} flex-wrap`}>
           <button
             type="button"
-            disabled={publishing || !hasContent}
+            onClick={() => navigate("/schedule")}
+            className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+          >
+            <CalendarDays size={16} />
+            View scheduled queue
+          </button>
+          <button
+            type="button"
+            disabled={scheduling || !hasContent || !scheduledAt}
             onClick={handleSubmit}
             className="inline-flex items-center gap-2 rounded-lg bg-buffer-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-buffer-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <Send size={16} />
-            {publishing ? "Posting…" : submitLabel}
+            <CalendarClock size={16} />
+            {scheduling ? "Scheduling…" : submitLabel}
           </button>
         </footer>
       </article>

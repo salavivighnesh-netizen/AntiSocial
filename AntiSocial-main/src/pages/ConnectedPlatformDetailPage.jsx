@@ -136,8 +136,8 @@ export default function ConnectedPlatformDetailPage() {
     return (
       <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-card dark:border-slate-800 dark:bg-slate-900">
         <p className="text-sm font-semibold">Unknown platform.</p>
-        <Link to="/connected-platforms" className="mt-3 inline-block text-sm text-brand-500 hover:text-brand-600">
-          Back to Connected Platforms
+        <Link to="/channels" className="mt-3 inline-block text-sm text-brand-500 hover:text-brand-600">
+          Back to Connect channels
         </Link>
       </section>
     );
@@ -150,9 +150,9 @@ export default function ConnectedPlatformDetailPage() {
           <AlertCircle size={18} />
           <h1 className="text-lg font-semibold">{label} is not connected</h1>
         </div>
-        <p className="text-sm text-slate-400">Connect this platform first from the Connected Platforms page.</p>
-        <Link to="/connected-platforms" className="inline-block rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600">
-          Go to Connected Platforms
+        <p className="text-sm text-slate-400">Connect this platform first from the Connect channels page.</p>
+        <Link to="/channels" className="inline-block rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600">
+          Go to Connect channels
         </Link>
       </section>
     );

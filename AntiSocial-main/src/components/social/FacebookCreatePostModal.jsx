@@ -200,7 +200,7 @@ export default function FacebookCreatePostModal({ open, onClose, account, onPubl
         <form className="mt-4 space-y-4" onSubmit={handleSubmit} noValidate>
           {!connected ? (
             <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-100/90">
-              Connect Facebook first from Connected Platforms.
+              Connect Facebook first from Connect channels.
             </p>
           ) : null}
           {errors.account ? (

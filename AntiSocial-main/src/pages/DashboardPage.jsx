@@ -33,10 +33,10 @@ export default function DashboardPage() {
             className="inline-flex items-center gap-2 rounded-lg bg-buffer-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-buffer-700"
           >
             <PenSquare size={16} />
-            Create post
+            Create
           </Link>
           <Link
-            to="/connected-platforms"
+            to="/channels"
             className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
           >
             <Radio size={16} />
@@ -47,7 +47,7 @@ export default function DashboardPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { label: "Connected channels", value: connectedCount, icon: Radio, to: "/connected-platforms" },
+          { label: "Connected channels", value: connectedCount, icon: Radio, to: "/channels" },
           { label: "Scheduled this week", value: "12", icon: CalendarDays, to: "/schedule" },
           { label: "Posts published", value: "48", icon: CheckCircle2, to: "/schedule" },
           { label: "In queue", value: "3", icon: Clock3, to: "/schedule" },
@@ -99,8 +99,9 @@ export default function DashboardPage() {
           </div>
           <ul className="p-3 space-y-1">
             {[
-              { label: "Publish a post", desc: "Compose for multiple channels", to: "/create-post", icon: PenSquare },
-              { label: "Open queue", desc: "Calendar and scheduled posts", to: "/schedule", icon: CalendarDays },
+              { label: "Create post", desc: "Compose and publish to multiple channels", to: "/create-post", icon: PenSquare },
+              { label: "Schedule post", desc: "Queue content for later", to: "/schedule/new", icon: CalendarDays },
+              { label: "View scheduled", desc: "Your scheduled queue", to: "/schedule", icon: CalendarDays },
               { label: "Channel settings", desc: "Connections and OAuth", to: "/settings/channels", icon: Radio },
             ].map((item) => {
               const Icon = item.icon;
@@ -135,7 +136,7 @@ export default function DashboardPage() {
             </p>
           </div>
           <Link
-            to="/connected-platforms"
+            to="/channels"
             className="inline-flex items-center gap-2 rounded-lg bg-buffer-600 px-4 py-2 text-sm font-semibold text-white hover:bg-buffer-700"
           >
             Connect channels

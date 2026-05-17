@@ -8,15 +8,16 @@ export default defineConfig(({ mode }) => {
     ngrokHost && (env.VITE_USE_NGROK_TUNNEL || "").trim() === "1";
   const ngrokHmrEnabled = (env.VITE_NGROK_HMR || "").trim() === "1";
 
+  const apiProxy = {
+    "/api": { target: "http://localhost:4000", changeOrigin: true },
+    "/uploads": { target: "http://localhost:4000", changeOrigin: true },
+  };
+
   return {
     plugins: [react()],
     server: {
       host: true,
-      proxy: {
-        "/api": { target: "http://localhost:4000", changeOrigin: true },
-        "/uploads": { target: "http://localhost:4000", changeOrigin: true },
-      },
-      // Leading dot allows every tunnel subdomain (ngrok changes the name each run on free tier).
+      proxy: apiProxy,
       allowedHosts: [
         "antisocial.onrender.com",
         "anti-social-chi.vercel.app",
@@ -25,8 +26,6 @@ export default defineConfig(({ mode }) => {
         ".ngrok.io",
         ".ngrok.app",
       ],
-      // Only when you browse the dev server through ngrok (see .env.example). Otherwise NGROK_HOST
-      // alone would misconfigure localhost:5173 (wrong origin + HMR WS → reload loops on free ngrok).
       ...(useNgrokTunnelDev
         ? {
             origin: `https://${ngrokHost}`,
@@ -41,6 +40,9 @@ export default defineConfig(({ mode }) => {
               : { hmr: false }),
           }
         : {}),
+    },
+    preview: {
+      proxy: apiProxy,
     },
   };
 });

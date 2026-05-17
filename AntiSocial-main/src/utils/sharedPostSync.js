@@ -98,3 +98,16 @@ export function syncSharedToAllDrafts(channelKeys, shared) {
   });
   return next;
 }
+
+/** Read shared caption/media from per-channel drafts (first channel with content wins). */
+export function getSharedFromDrafts(channelKeys, drafts = {}) {
+  if (!channelKeys.length) return { caption: "", file: null, mediaUrl: "" };
+  const caption =
+    channelKeys.map((k) => drafts[k]?.caption?.trim()).find(Boolean) ||
+    drafts[channelKeys[0]]?.caption ||
+    "";
+  const file = channelKeys.map((k) => drafts[k]?.file).find(Boolean) || null;
+  const mediaUrl =
+    channelKeys.map((k) => drafts[k]?.mediaUrl?.trim()).find(Boolean) || "";
+  return { caption, file, mediaUrl };
+}

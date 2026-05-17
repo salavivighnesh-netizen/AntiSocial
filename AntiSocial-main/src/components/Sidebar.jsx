@@ -17,7 +17,7 @@ export default function Sidebar({ open, onClose, onLogout }) {
       return {
         key: account.platform,
         label: platformConfig?.label || account.platform,
-        path: `/connected-platforms/${account.platform}`,
+        path: `/channels/${account.platform}`,
         profileImage: account.profileImage,
         Icon,
       };
@@ -123,11 +123,11 @@ export default function Sidebar({ open, onClose, onLogout }) {
                 })}
               </ul>
               <NavLink
-                to="/connected-platforms"
+                to="/channels"
                 onClick={onClose}
                 className="mt-2 block px-3 text-xs font-medium text-buffer-700 hover:text-buffer-800 dark:text-buffer-400"
               >
-                Manage all platforms
+                Connect channels
               </NavLink>
             </div>
           ) : (
@@ -135,11 +135,11 @@ export default function Sidebar({ open, onClose, onLogout }) {
               <p className="text-xs font-medium text-slate-700 dark:text-slate-200">No channels yet</p>
               <p className="mt-1 text-[11px] text-slate-500">Connect accounts to publish everywhere.</p>
               <NavLink
-                to="/connected-platforms"
+                to="/channels"
                 onClick={onClose}
                 className="mt-2 inline-block text-xs font-semibold text-buffer-700 dark:text-buffer-400"
               >
-                Connect platforms →
+                Connect channels →
               </NavLink>
             </div>
           )}

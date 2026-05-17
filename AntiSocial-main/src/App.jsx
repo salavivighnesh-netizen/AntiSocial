@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useParams } from "react-router-dom";
 import { useLayoutEffect } from "react";
 import { AppProvider, useApp } from "./context/AppContext";
 import DashboardLayout from "./layouts/DashboardLayout";
@@ -7,12 +7,12 @@ import SignupPage from "./pages/SignupPage";
 import DashboardPage from "./pages/DashboardPage";
 import CreatePostPage from "./pages/CreatePostPage";
 import SchedulePage from "./pages/SchedulePage";
+import SchedulePostPage from "./pages/SchedulePostPage";
 import SettingsLayout from "./layouts/SettingsLayout";
 import SettingsAccountPage from "./pages/settings/SettingsAccountPage";
 import SettingsChannelsPage from "./pages/settings/SettingsChannelsPage";
 import SettingsPreferencesPage from "./pages/settings/SettingsPreferencesPage";
 import ChannelsPage from "./pages/ChannelsPage";
-import ConnectedPlatformsPage from "./pages/ConnectedPlatformsPage";
 import ConnectedPlatformDetailPage from "./pages/ConnectedPlatformDetailPage";
 import OnboardingPlatformsPage from "./pages/OnboardingPlatformsPage";
 import Toast from "./components/Toast";
@@ -51,6 +51,11 @@ function NotFoundRoute() {
   return <Navigate to={isOnboardingCompleted ? "/dashboard" : "/onboarding/platforms"} replace />;
 }
 
+function RedirectLegacyConnectedPlatform() {
+  const { platformKey } = useParams();
+  return <Navigate to={platformKey ? `/channels/${platformKey}` : "/channels"} replace />;
+}
+
 function RootRouter() {
   const { theme } = useApp();
 
@@ -83,10 +88,11 @@ function RootRouter() {
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="create-post" element={<CreatePostPage />} />
           <Route path="schedule" element={<SchedulePage />} />
+          <Route path="schedule/new" element={<SchedulePostPage />} />
           <Route path="channels" element={<ChannelsPage />} />
           <Route path="channels/:platformKey" element={<ConnectedPlatformDetailPage />} />
-          <Route path="connected-platforms" element={<ConnectedPlatformsPage />} />
-          <Route path="connected-platforms/:platformKey" element={<ConnectedPlatformDetailPage />} />
+          <Route path="connected-platforms" element={<Navigate to="/channels" replace />} />
+          <Route path="connected-platforms/:platformKey" element={<RedirectLegacyConnectedPlatform />} />
           <Route path="settings" element={<SettingsLayout />}>
             <Route index element={<Navigate to="account" replace />} />
             <Route path="account" element={<SettingsAccountPage />} />

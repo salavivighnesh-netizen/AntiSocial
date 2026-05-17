@@ -4,8 +4,11 @@
  * (works when you open the app via LAN IP, not only localhost).
  */
 export function getClientApiBaseUrl() {
-  const fromEnv = (import.meta.env.VITE_API_URL || "").trim().replace(/\/$/, "");
-  if (fromEnv) return fromEnv;
+  const fromEnv = (import.meta.env.VITE_API_URL || "").trim().replace(/\/+$/, "");
+  if (fromEnv) {
+    // Avoid http://host:4000/api + /api/schedule → /api/api/schedule (404)
+    return fromEnv.replace(/\/api$/i, "");
+  }
   if (import.meta.env.DEV) return "";
   return "http://localhost:4000";
 }
